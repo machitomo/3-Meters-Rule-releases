@@ -1,0 +1,61 @@
+name: Publish game release
+
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Existing public tag to release'
+        required: true
+        default: 'v0.0.1'
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: public-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      VERSION: ${{ inputs.version || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify public tag and files
+        run: |
+          [[ "$VERSION" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          [[ "$VERSION" != v0.0.0 ]]
+          git checkout --detach "refs/tags/$VERSION"
+          cd release
+          sha256sum --check SHA256SUMS.txt
+          python3 - <<'PY'
+          import os, zipfile
+          with zipfile.ZipFile(f'3_meters_rule_{os.environ["VERSION"]}.zip') as bundle:
+              assert set(bundle.namelist()) == {'3_meters_rule.gbc', '3_meters_rule_cover.png', 'README.md'}
+              assert bundle.testzip() is None
+              for name in bundle.namelist():
+                  assert bundle.read(name) == open(name, 'rb').read()
+          PY
+      - name: Publish verified assets
+        run: |
+          if gh release view "$VERSION" --repo "$GITHUB_REPOSITORY" --json isDraft > "$RUNNER_TEMP/release.json"; then
+            if [[ "$(jq -r .isDraft "$RUNNER_TEMP/release.json")" == false ]]; then
+              echo "Release $VERSION is already published; keeping its assets unchanged."
+              exit 0
+            fi
+          else
+            printf '3 Meters Rule! %s\n\nGame Boy Color向けの逃走アクションです。\nZIPにはROM・パッケージ絵・遊び方が入っています。\nDeltaの表紙設定は同梱READMEを参照してください。\n\nGBC実機・SameBoyでの最終確認は未実施です。\n' "$VERSION" > "$RUNNER_TEMP/notes.md"
+            gh release create "$VERSION" --repo "$GITHUB_REPOSITORY" --verify-tag --draft --title "3 Meters Rule! $VERSION" --notes-file "$RUNNER_TEMP/notes.md"
+          fi
+          gh release upload "$VERSION" --repo "$GITHUB_REPOSITORY" --clobber release/3_meters_rule.gbc release/3_meters_rule_cover.png "release/3_meters_rule_$VERSION.zip" release/SHA256SUMS.txt
+          gh release edit "$VERSION" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+          echo "[Download $VERSION](https://github.com/$GITHUB_REPOSITORY/releases/tag/$VERSION)" >> "$GITHUB_STEP_SUMMARY"
