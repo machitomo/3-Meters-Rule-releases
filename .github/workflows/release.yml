@@ -53,7 +53,7 @@ jobs:
               exit 0
             fi
           else
-            printf '3 Meters Rule! %s\n\nGame Boy Color向けの逃走アクションです。\nZIPにはROM・パッケージ絵・遊び方が入っています。\nDeltaの表紙設定は同梱READMEを参照してください。\n\nGBC実機・SameBoyでの最終確認は未実施です。\n' "$VERSION" > "$RUNNER_TEMP/notes.md"
+            printf '3 Meters Rule! %s\n\n南極の雪原で、ペンギンを避けながら観測基地への帰還を目指すGBC用逃走アクションです。\nダッシュとアイテムを使って全3ステージをクリアし、合計クリア時間を縮めよう。\n' "$VERSION" > "$RUNNER_TEMP/notes.md"
             gh release create "$VERSION" --repo "$GITHUB_REPOSITORY" --verify-tag --draft --title "3 Meters Rule! $VERSION" --notes-file "$RUNNER_TEMP/notes.md"
           fi
           gh release upload "$VERSION" --repo "$GITHUB_REPOSITORY" --clobber release/3_meters_rule.gbc release/3_meters_rule_cover.png "release/3_meters_rule_$VERSION.zip" release/SHA256SUMS.txt
