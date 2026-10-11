@@ -11,6 +11,9 @@ STARTで始めると雪上車が停車し、隊員が降りた後に操作でき
 
 [ダウンロード](https://github.com/machitomo/3-Meters-Rule-releases/releases/latest)
 
+## ブラウザ版
+ブラウザ版（EmulatorJS）は [itch.io](https://hothiyachu.itch.io/3-meters-rule) で公開しています。
+
 ## 操作
 
 | ボタン | 操作 |
